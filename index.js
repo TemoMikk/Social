@@ -4,6 +4,9 @@ const app = express()
 const dotenv = require('dotenv').config()
 const bcrypt = require('bcrypt')
 const bodyParser = require('body-parser')
+const cors = require('cors')
+const fs = require('fs')
+
 app.use(bodyParser.json())
 
 const MONGO_URI = process.env.MONGO_URI
@@ -22,11 +25,54 @@ const registrationSchema = new mongoose.Schema({
   password: { type: String, required: true },
 })
 
+const photoSchema = new mongoose.Schema({
+  name: String,
+  data: Buffer,
+  caption: String,
+})
+
 const Registration = mongoose.model('Registration', registrationSchema)
+const Photo = mongoose.model('Photo', photoSchema)
+
+app.use(
+  cors({
+    origin: '*',
+    methods: ['GET', 'PUT', 'POST', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+)
 
 // Set up routes
 app.get('/', (req, res) => {
   res.send('Welcome to the registration app!')
+})
+const multer = require('multer')
+const upload = multer({ dest: 'uploads/' })
+
+app.post('/upload', upload.single('photo'), (req, res) => {
+  if (!req.file) {
+    const newCaption = new Photo({
+      caption: req.body.caption,
+    })
+    newCaption.save((err, result) => {
+      console.log('Caption added to the database')
+      res.send('Caption added')
+    })
+  } else {
+    console.log(req.file, req.body.formData, fs.readFileSync(req.file.path))
+    const photo = fs.readFileSync(req.file.path)
+    const encodedImage = photo.toString('base64')
+    const newPhoto = new Photo({
+      name: req.file.originalname,
+      data: Buffer.from(encodedImage, 'base64'),
+      caption: req.body.caption,
+    })
+    newPhoto.save((err, result) => {
+      console.log('Photo and caption added to the database')
+      fs.unlinkSync(req.file.path)
+      res.send('File uploaded')
+    })
+  }
 })
 
 app.post('/register', async (req, res) => {
@@ -72,6 +118,6 @@ app.post('/login', async (req, res) => {
   }
 })
 
-app.listen(3000, () => {
+app.listen(3001, () => {
   console.log('Registration app listening on port 3000!')
 })
