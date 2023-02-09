@@ -118,6 +118,12 @@ app.post('/dislike', (req, res) => {
   })
 })
 
+app.get('/posts', (req, res) => {
+  Photo.find({}, (err, Photo) => {
+    res.send(Photo)
+  })
+})
+
 app.post('/register', async (req, res) => {
   try {
     const hash = await bcrypt.hash(req.body.password, 10)
