@@ -55,6 +55,7 @@ app.get('/', (req, res) => {
   res.send('Welcome to the registration app!')
 })
 const multer = require('multer')
+const { log } = require('console')
 const upload = multer({ dest: 'uploads/' })
 
 app.post('/upload', upload.single('photo'), (req, res) => {
@@ -84,9 +85,9 @@ app.post('/upload', upload.single('photo'), (req, res) => {
 })
 
 app.post('/likes', (req, res) => {
-  const { photoId, username } = req.body
+  const { id, username } = req.body
 
-  Photo.findById(photoId, (err, photo) => {
+  Photo.findById(id, (err, photo) => {
     if (err) return res.status(400).send(err)
 
     console.log(photo)
@@ -100,7 +101,7 @@ app.post('/likes', (req, res) => {
   })
 })
 
-app.post('/dislike', (req, res) => {
+app.delete('/dislike', (req, res) => {
   const { photoId, username } = req.body
 
   Photo.findById(photoId, (err, photo) => {
@@ -122,17 +123,41 @@ app.post('/dislike', (req, res) => {
   })
 })
 
-app.post('/comments', (req, res) => {
-  const { photoId, username, comment } = req.body
+app.delete('/uncomment', (req, res) => {
+  const { postID, commentID } = req.body
 
-  Photo.findById(photoId, (err, photo) => {
+  Photo.findById(postID, (err, photo) => {
     if (err) return res.status(400).send(err)
+    if (!photo) return res.status(400).send({ message: 'photo not found' })
 
-    photo.commentUsernames.push({ username, comment })
+    photo.commentUsernames = photo.commentUsernames.filter(
+      (comment) => comment.id !== commentID
+    )
     photo.save((error, result) => {
       if (error) return res.status(400).send(error)
 
-      res.send({ message: 'Comment added ' })
+      res.send({ message: 'comment removed' })
+    })
+  })
+})
+
+app.delete('/uncomment', (req, res) => {
+  const { postID, commentID } = req.body
+
+  Photo.findById(postID, (err, photo) => {
+    if (err) return res.status(400).send(err)
+    if (!photo) return res.status(400).send({ message: 'comment not found' })
+
+    const index = photo.commentUsernames.indexOf(commentID)
+    console.log(index)
+    if (index === -1)
+      return res.status(400).send({ message: 'comment not found ' })
+
+    photo.commentUsernames.splice(index, 1)
+    photo.save((error, result) => {
+      if (error) return res.status(400).send(error)
+
+      res.send({ message: 'comment removed ' })
     })
   })
 })
