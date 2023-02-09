@@ -29,8 +29,12 @@ const photoSchema = new mongoose.Schema({
   name: String,
   data: Buffer,
   caption: String,
-  usernames: {
+  likesUsernames: {
     type: [String],
+    default: [],
+  },
+  commentUsernames: {
+    type: [{ username: String, comment: String }],
     default: [],
   },
 })
@@ -87,7 +91,7 @@ app.post('/likes', (req, res) => {
 
     console.log(photo)
 
-    photo.usernames.push(username)
+    photo.likesUsernames.push(username)
     photo.save((error, result) => {
       if (error) return res.status(400).send(error)
 
@@ -113,7 +117,22 @@ app.post('/dislike', (req, res) => {
     photo.save((error, result) => {
       if (error) return res.status(400).send(error)
 
-      res.send({ message: 'Username removed from the usernames array' })
+      res.send({ message: 'Username removed from the likes array' })
+    })
+  })
+})
+
+app.post('/comments', (req, res) => {
+  const { photoId, username, comment } = req.body
+
+  Photo.findById(photoId, (err, photo) => {
+    if (err) return res.status(400).send(err)
+
+    photo.commentUsernames.push({ username, comment })
+    photo.save((error, result) => {
+      if (error) return res.status(400).send(error)
+
+      res.send({ message: 'Comment added ' })
     })
   })
 })
