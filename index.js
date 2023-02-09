@@ -29,6 +29,10 @@ const photoSchema = new mongoose.Schema({
   name: String,
   data: Buffer,
   caption: String,
+  usernames: {
+    type: [String],
+    default: [],
+  },
 })
 
 const Registration = mongoose.model('Registration', registrationSchema)
@@ -73,6 +77,45 @@ app.post('/upload', upload.single('photo'), (req, res) => {
       res.send('File uploaded')
     })
   }
+})
+
+app.post('/likes', (req, res) => {
+  const { photoId, username } = req.body
+
+  Photo.findById(photoId, (err, photo) => {
+    if (err) return res.status(400).send(err)
+
+    console.log(photo)
+
+    photo.usernames.push(username)
+    photo.save((error, result) => {
+      if (error) return res.status(400).send(error)
+
+      res.send({ message: 'Username added to the usernames array' })
+    })
+  })
+})
+
+app.post('/dislike', (req, res) => {
+  const { photoId, username } = req.body
+
+  Photo.findById(photoId, (err, photo) => {
+    if (err) return res.status(400).send(err)
+    if (!photo) return res.status(400).send({ message: 'Photo not found' })
+
+    const index = photo.usernames.indexOf(username)
+    if (index === -1)
+      return res
+        .status(400)
+        .send({ message: 'Username not found in usernames array' })
+
+    photo.usernames.splice(index, 1)
+    photo.save((error, result) => {
+      if (error) return res.status(400).send(error)
+
+      res.send({ message: 'Username removed from the usernames array' })
+    })
+  })
 })
 
 app.post('/register', async (req, res) => {
